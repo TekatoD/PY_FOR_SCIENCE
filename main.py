@@ -5,6 +5,7 @@ import OpenEXR
 import Imath
 import array
 
+
 image_size = (160, 120)
 image_size_line = image_size[0] * image_size[1]
 

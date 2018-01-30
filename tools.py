@@ -20,3 +20,7 @@ def png_scaler_grayer(file, x, y):
     img = cv2.resize(img, (x, y), interpolation=cv2.INTER_CUBIC)
     img = cv2.cvtColor(img, dstCn=cv2.COLOR_BGR2GRAY)
     return img
+
+def create_database(folder = 'folder', input_name = 'Image', ouput_name='Depth', samples_number = 250):
+    for i in range(250):
+        str(i).zfill(4)
