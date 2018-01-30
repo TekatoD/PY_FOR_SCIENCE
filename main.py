@@ -1,13 +1,16 @@
+from keras.utils import plot_model
 from keras.models import Model
-from keras.layers import Input, Dense, Reshape, LSTM, concatenate, Conv2D, Conv1D, GRU
-from keras.preprocessing.image import ImageDataGenerator, load_img
-import OpenEXR
-import Imath
-import array
-
+from keras.layers import Input, Dense, Reshape, LSTM, concatenate
+from keras.callbacks import ModelCheckpoint, ProgbarLogger
+from tools import create_database
 
 image_size = (160, 120)
 image_size_line = image_size[0] * image_size[1]
+
+training = create_database(folder='/home/tekatod/Pictures/render')
+validation =  create_database(folder='/home/tekatod/Pictures/test')
+
+print('Databases created')
 
 inputs = [Input(shape=(1, *image_size), name="image_{0}".format(i)) for i in range(3)]
 paths = [Reshape(image_size)(layer) for layer in inputs]
@@ -24,5 +27,14 @@ merge = LSTM(image_size_line//16)(merge)
 out = Dense(image_size_line, activation='softmax')(merge)
 out_reshape = Reshape(image_size)(out)
 model = Model(inputs=inputs, outputs=out_reshape)
+plot_model(model, to_file='model.png', show_layer_names=True, show_shapes=True)
 
-print(model.input)
+print('Model created')
+
+model.compile(optimizer='nadam', loss='binary_crossentropy')
+
+print('Model compiled, start training...')
+model.fit(training[0], training[1], epochs=50, batch_size=5, validation_data=validation, callbacks=[
+    ModelCheckpoint('weights.{epoch:02d}-{val_loss:.2f}.hdf5', save_best_only=True),
+    ProgbarLogger(count_mode='samples')
+])
