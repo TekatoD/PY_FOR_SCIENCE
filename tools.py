@@ -16,7 +16,6 @@ def exr_scaler_grayer(file, x, y):
     np_img = cv2.resize(np_img, (x, y), interpolation=cv2.INTER_CUBIC)
     return np_img
 
-
 def png_scaler_grayer(file, x, y):
     img = cv2.imread(file)
     img = cv2.resize(img, (x, y), interpolation=cv2.INTER_CUBIC)
@@ -31,6 +30,10 @@ def create_database(folder='folder', input_name='Image', ouput_name='Depth', sam
     y = np.empty((samples_num - arrays_num + 1, *reversed(size)), dtype=np.float32)
     for iter in range(samples_num - arrays_num + 1):
         for arr in range(arrays_num):
-            x[arr][iter] = png_scaler_grayer(frmt.format(path=folder, file=input_name, val=(iter + arr + 1), ext='png'), *size)
+            if iter > 0 and arr + 1 < arrays_num:
+                x[arr][iter] = x[arr + 1][iter - 1]
+            else:
+                x[arr][iter] = png_scaler_grayer(frmt.format(path=folder, file=input_name, val=(iter + arr + 1), ext='png'), *size)
+
         y[iter] = exr_scaler_grayer(frmt.format(path=folder, file=ouput_name, val=iter + arrays_num, ext='exr'), *size)
     return x, y
