@@ -4,15 +4,17 @@ from keras.layers import Input, Dense, Reshape, LSTM, concatenate
 from keras.callbacks import ModelCheckpoint, ProgbarLogger
 from tools import create_database
 
-image_size = (160, 120)
+image_size = (120, 160)
 image_size_line = image_size[0] * image_size[1]
 
 training = create_database(folder='/home/tekatod/Pictures/render')
 validation =  create_database(folder='/home/tekatod/Pictures/test')
 
+print(training[0][0].shape)
+
 print('Databases created')
 
-inputs = [Input(shape=(1, *image_size), name="image_{0}".format(i)) for i in range(3)]
+inputs = [Input(shape=(image_size), name="image_{0}".format(i)) for i in range(3)]
 paths = [Reshape(image_size)(layer) for layer in inputs]
 paths = [LSTM(image_size_line//16)(layer) for layer in paths]
 for i in range(3):
