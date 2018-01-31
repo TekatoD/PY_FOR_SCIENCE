@@ -22,19 +22,22 @@ def png_scaler_grayer(file, x, y):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     return img
 
+def read_camera(folder='folder', filename='Camera.txt', samples_num=250):
+    res = np.empty((0, 6), np.float32)
+    with open(folder + '/' + filename) as f:
+        for i, line in zip(range(samples_num), f.readlines()):
+            vals = [float(t) for t in line.split(', ')]
+            vals.pop(0)
+            res = np.append(res, [vals], axis=0)
+    return res
+
 
 def create_database(folder='folder', input_name='Image', ouput_name='Depth', samples_num=250, size=(160, 120)):
-    arrays_num = 3
     frmt = "{path}/{file}{val:0>4}.{ext}"
-    x = [np.empty((samples_num - arrays_num + 1, *reversed(size)), dtype=np.float32) for arr in range(arrays_num)]
-    y = np.empty((samples_num - arrays_num + 1, *reversed(size)), dtype=np.float32)
-    for iter in range(samples_num - arrays_num + 1):
+    x = np.empty((samples_num, *reversed(size)), dtype=np.float32)
+    y = np.empty((samples_num, *reversed(size)), dtype=np.float32)
+    for iter in range(samples_num):
         print(iter)
-        for arr in range(arrays_num):
-            if iter > 0 and arr + 1 < arrays_num:
-                x[arr][iter] = x[arr + 1][iter - 1]
-            else:
-                x[arr][iter] = png_scaler_grayer(frmt.format(path=folder, file=input_name, val=(iter + arr + 1), ext='png'), *size)
-
-        y[iter] = exr_scaler_grayer(frmt.format(path=folder, file=ouput_name, val=iter + arrays_num, ext='exr'), *size)
+        x[iter] = png_scaler_grayer(frmt.format(path=folder, file=input_name, val=(iter + 1), ext='png'), *size)
+        y[iter] = exr_scaler_grayer(frmt.format(path=folder, file=ouput_name, val=(iter + 1), ext='exr'), *size)
     return x, y
