@@ -1,6 +1,8 @@
 import OpenEXR
 import Imath
 import array
+
+import h5py
 import numpy as np
 import cv2
 
@@ -38,3 +40,34 @@ def create_database(folder='folder', input_name='Image', ouput_name='Depth', sam
 
         y[iter] = exr_scaler_grayer(frmt.format(path=folder, file=ouput_name, val=iter + arrays_num, ext='exr'), *size)
     return x, y
+
+def save_dataset_file(file_name = 'dataset.h5', training = None, validation = None):
+    dataset_file = h5py.File(file_name, 'w')
+    def save_data(file, data, data_name):
+        train_grp = file.create_group(data_name)
+        for n, d in enumerate(data):
+            train_grp.create_dataset(str(n), data=d)
+
+    if training is not None:
+        save_data(dataset_file, training, 'training')
+    if validation is not None:
+        save_data(dataset_file, validation, 'validation')
+
+    dataset_file.close()
+
+def read_dataset_file(file_name = 'dataset.h5', training_group = 'training', validation_group = 'validation'):
+    dataset_file = h5py.File(file_name, 'r')
+    def read(file, group_name):
+        np_in = np.array(file[group_name].get('0'))
+        return [arr for arr in np_in], np.array(file[group_name].get('1'))
+        # return [[file[group_name].get(arr)] for arr in file[group_name].keys()]
+    if training_group is not None:
+        x = read(dataset_file, training_group)
+    else:
+        x = None
+    if validation_group is not None:
+        y = read(dataset_file, validation_group)
+    else:
+        y = None
+    dataset_file.close()
+    return  x, y
