@@ -16,12 +16,14 @@ def exr_scaler_grayer(file, x, y):
     np_img = np.array([(r + g + b) / 3 for r, g, b in zip(R, G, B)])
     np_img.resize(sz[1], sz[0])
     np_img = cv2.resize(np_img, (x, y), interpolation=cv2.INTER_CUBIC)
+    # cv2.normalize(np_img, np_img, 0, 1, cv2.NORM_MINMAX, cv2.CV_32FC1)
     return np_img
 
 def png_scaler_grayer(file, x, y):
     img = cv2.imread(file)
     img = cv2.resize(img, (x, y), interpolation=cv2.INTER_CUBIC)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    img = cv2.normalize(img, img, 0, 1, cv2.NORM_MINMAX, cv2.CV_32FC1)
     return img
 
 
@@ -71,3 +73,29 @@ def read_dataset_file(file_name = 'dataset.h5', training_group = 'training', val
         y = None
     dataset_file.close()
     return  x, y
+
+def get_model_memory_usage(batch_size, model):
+    import numpy as np
+    from keras import backend as K
+
+    shapes_mem_count = 0
+    for l in model.layers:
+        single_layer_mem = 1
+        for s in l.output_shape:
+            if s is None:
+                continue
+            single_layer_mem *= s
+        shapes_mem_count += single_layer_mem
+
+    trainable_count = np.sum([K.count_params(p) for p in set(model.trainable_weights)])
+    non_trainable_count = np.sum([K.count_params(p) for p in set(model.non_trainable_weights)])
+
+    total_memory = 4.0*batch_size*(shapes_mem_count + trainable_count + non_trainable_count)
+    gbytes = np.round(total_memory / (1024.0 ** 3), 3)
+    return gbytes
+
+def generate_batch(data, batch_length = 2):
+    while True:
+        for i in range(0, len(data[0][0]), batch_length):
+            yield ([data[0][0][i:i + batch_length], data[0][1][i:i + batch_length], data[0][2][i:i + batch_length]],
+                    data[1][i:i + batch_length])
