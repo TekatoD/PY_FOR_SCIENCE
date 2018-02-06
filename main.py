@@ -1,7 +1,7 @@
 from keras.utils import plot_model
 from keras.models import Model, model_from_json
 from keras.layers import Input, Dense, Reshape, LSTM, concatenate, Conv2D, MaxPooling2D, Flatten
-from keras.callbacks import ModelCheckpoint, ProgbarLogger, RemoteMonitor
+from keras.callbacks import ModelCheckpoint, ProgbarLogger, RemoteMonitor, CSVLogger
 from tools import create_database, save_dataset_file, read_dataset_file, get_model_memory_usage, generate_batch
 import numpy as np
 
@@ -35,8 +35,8 @@ if not read_model:
     paths = [Flatten()(layer) for layer in paths]
     paths = [Dense(image_size_line//16, activation='relu')(layer) for layer in paths]
     paths = [Reshape((image_size[0]//4, image_size[1]//4))(layer) for layer in paths]
-    paths = [LSTM(image_size_line//16)(layer) for layer in paths]
     merge = concatenate(paths)
+    merge = Flatten()(merge)
     merge = Dense(image_size_line//16, activation='relu')(merge)
     merge = Reshape((image_size[0]//4, image_size[1]//4, 1))(merge)
     merge = Conv2D(32, kernel_size=(4, 4))(merge)
@@ -45,9 +45,8 @@ if not read_model:
     merge = MaxPooling2D()(merge)
     merge = Flatten()(merge)
     merge = Dense(image_size_line//16, activation='relu')(merge)
-    merge = Reshape((image_size[0]//4, image_size[1]//4))(merge)
-    merge = LSTM(image_size_line//16)(merge)
-    out = Dense(image_size_line, activation='relu')(merge)
+    out = Dense(image_size_line, activation='linear')(merge)
+    print(out)
     out_reshape = Reshape(image_size)(out)
     model = Model(inputs=inputs, outputs=out_reshape)
     plot_model(model, to_file='second_model.png', show_layer_names=True, show_shapes=True)
@@ -70,17 +69,17 @@ print('Model created')
 
 
 print('Model compiled, start training...')
-# model.fit(training[0], training[1], epochs=250, batch_size=1, validation_data=validation, callbacks=[
-#     ModelCheckpoint('weights.{epoch:02d}-{val_loss:.2f}.hdf5', save_best_only=True),
-#     ProgbarLogger(count_mode='samples'),
-#     RemoteMonitor(root='192.168.0.157:9000')
-# ])
-
-model.fit_generator(generate_batch(training), steps_per_epoch=248, epochs=500 , validation_data=generate_batch(validation), validation_steps=248, callbacks=[
+model.fit(training[0], training[1], epochs=250, batch_size=1, validation_data=validation, callbacks=[
     ModelCheckpoint('weights.{epoch:02d}-{val_loss:.2f}.hdf5', save_best_only=True),
-    RemoteMonitor(root='192.168.0.157:9000')
+    ProgbarLogger(count_mode='samples'),
+    CSVLogger('training.log')
 ])
 
+# model.fit_generator(generate_batch(training), steps_per_epoch=248, epochs=500 , validation_data=generate_batch(validation), validation_steps=248, callbacks=[
+#     ModelCheckpoint('weights.{epoch:02d}-{val_loss:.2f}.hdf5', save_best_only=True),
+#     RemoteMonitor(root='192.168.0.157:9000')
+# ])
+#
 
 # input_0 = Input(shape=(2,), name='input')
 # path=Dense(4, activation='relu')(input_0)
